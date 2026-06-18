@@ -1,8 +1,10 @@
-- [ ] Inspect and confirm requirements for a terminal Pomodoro tracker
-- [ ] Create initial C/C++/asm codebase structure
-- [ ] Implement time tracking for 6 domains with assigned durations (Portal=7h, Factory=4h, Benjamin's Game=4h, Matrix Manual=4h, Rabbit Hole=4h, Specter Spectacle=4h)
-- [ ] Implement CLI flow: user selects start, timer counts down, prints when domain finishes
-- [ ] Add build instructions (Makefile + basic commands)
-- [ ] Provide a quick run/demo command
-- [ ] Later: extend features (pause, resume, history, persistence)
+# TODO (Time Pod) — Display + Desktop UI
+
+- [x] Implement persistent completion tracking (by day) for domain ticks
+
+- [ ] Refactor timer to support pause/continue and non-blocking stepping
+- [ ] Build terminal “desktop” renderer (split panels, hacker-style borders/colors via ANSI)
+- [ ] Implement keyboard controls (p=pause, c=continue, q=quit) using POSIX termios + non-blocking stdin
+- [ ] Wire main loop: redraw at ~5–10 FPS, update remaining time, update calendar grid, persist ticks on changes
+- [ ] Test: compile, run, verify pause/resume, verify persistence across restarts
 

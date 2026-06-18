@@ -7,7 +7,6 @@
 
 void timer_init_hours(DomainTimer *dt, const char *name, uint64_t hours) {
 
-
     uint64_t total = hours * 60ULL * 60ULL;
     dt->name = name;
     dt->seconds_total = total;
@@ -18,8 +17,6 @@ uint64_t timer_now_ns(void) {
     return (uint64_t)time(NULL) * 1000000000ULL;
 }
 
-
-
 void timer_format_hms(uint64_t seconds, char buf[9]) {
     uint64_t h = seconds / 3600ULL;
     uint64_t m = (seconds % 3600ULL) / 60ULL;
@@ -27,6 +24,7 @@ void timer_format_hms(uint64_t seconds, char buf[9]) {
 
     /* Clamp to 99 hours for display width; keep logic based on full seconds. */
     if (h > 99ULL) h = 99ULL;
+
     /* HH:MM:SS */
     snprintf(buf, 9, "%02llu:%02llu:%02llu",
              (unsigned long long)h,
@@ -35,6 +33,7 @@ void timer_format_hms(uint64_t seconds, char buf[9]) {
 }
 
 int timer_run_blocking(DomainTimer *dt) {
+    /* legacy blocking runner kept for backward compatibility */
     uint64_t start_ns = timer_now_ns();
     uint64_t last_sec_reported = (uint64_t)-1;
 
@@ -42,7 +41,6 @@ int timer_run_blocking(DomainTimer *dt) {
         sleep(1); /* 1s granularity to avoid non-portable APIs */
 
         uint64_t now_ns = timer_now_ns();
-
         uint64_t elapsed_seconds = (now_ns - start_ns) / 1000000000ULL;
         uint64_t new_left = (dt->seconds_total > elapsed_seconds) ? (dt->seconds_total - elapsed_seconds) : 0;
         dt->seconds_left = new_left;
@@ -55,7 +53,6 @@ int timer_run_blocking(DomainTimer *dt) {
             fflush(stdout);
         }
     }
-
 
     printf("\r[%s] Remaining: 00:00:00\n", dt->name);
     printf("*** DOMAIN COMPLETE: %s ***\n", dt->name);

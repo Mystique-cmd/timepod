@@ -1,42 +1,118 @@
 #include <iostream>
 #include <string>
+#include <unistd.h>
 
 extern "C" {
 #include "timer.h"
+#include "timer_nb.h"
 #include "io.h"
+#include "ui.h"
+#include "terminal.h"
+}
+
+static void choose_domain_by_key(int key, DomainTimer *out_dt, int *out_idx) {
+    /* legacy keyboard digits 1..6 */
+    if (!out_dt || !out_idx) return;
+
+    const char *names[6] = {
+        "The Portal",
+        "The Factory",
+        "Benjamin's Game",
+        "The Matrix Manual",
+        "The Rabbit Hole",
+        "Specter Spectacle"
+    };
+    const uint64_t hours[6] = {7, 4, 4, 1, 4, 4};
+
+    if (key < '1' || key > '6') {
+        *out_idx = -1;
+        return;
+    }
+    int idx = key - '1';
+    out_dt->name = names[idx];
+    timer_init_hours(out_dt, names[idx], hours[idx]);
+    *out_idx = idx;
 }
 
 int main() {
     io_clear_screen();
 
-    while (true) {
-        io_print_domains();
-        int choice = io_read_int_choice("\nEnter choice: ", 0, 6);
-        if (choice == 0) {
-            std::cout << "Exiting.\n";
-            return 0;
+    TerminalRawMode trm{};
+    terminal_enable_raw_mode(&trm);
+
+    UiState st{};
+    st.active_domain_idx = 0;
+    st.has_session = false;
+    st.paused = false;
+    st.seconds_left = 0;
+    st.seconds_total = 0;
+
+    ui_load_day_record(&st);
+
+    TimerNB nb{};
+    timer_nb_init(&nb);
+
+    DomainTimer dt{};
+
+
+
+    bool running = true;
+    while (running) {
+        /* input */
+        int key = terminal_read_key_nonblocking();
+        if (key != -1) {
+            if (key == 'q' || key == 'Q') {
+                running = false;
+            } else if (key == 'p' || key == 'P') {
+                if (st.has_session) {
+                    st.paused = !st.paused;
+                    timer_nb_set_paused(&nb, &dt, st.paused ? 1 : 0);
+                }
+            } else if (key == 'c' || key == 'C') {
+                if (st.has_session) {
+                    st.paused = false;
+                    timer_nb_set_paused(&nb, &dt, 0);
+                }
+            } else if (key >= '1' && key <= '6') {
+                int idx = -1;
+                choose_domain_by_key(key, &dt, &idx);
+                if (idx >= 0) {
+                    st.active_domain_idx = idx;
+                    st.has_session = true;
+                    st.paused = false;
+                    st.active_domain_idx = idx;
+                    timer_nb_start(&nb, &dt);
+                    st.seconds_left = dt.seconds_left;
+                    st.seconds_total = dt.seconds_total;
+                }
+            }
         }
 
-        DomainTimer dt{};
-        switch (choice) {
-            case 1: timer_init_hours(&dt, "The Portal", 7); break;
-            case 2: timer_init_hours(&dt, "The Factory", 4); break;
-            case 3: timer_init_hours(&dt, "Benjamin's Game", 4); break;
-            case 4: timer_init_hours(&dt, "The Matrix Manual", 1); break;
+        /* tick */
+        if (st.has_session) {
+            int completed = timer_nb_step(&nb, &dt);
+            st.seconds_left = dt.seconds_left;
+            st.seconds_total = dt.seconds_total;
 
-            case 5: timer_init_hours(&dt, "The Rabbit Hole", 4); break;
-            case 6: timer_init_hours(&dt, "Specter Spectacle", 4); break;
-            default: continue;
+            if (completed) {
+                ui_mark_domain_completed_today(&st, st.active_domain_idx);
+                st.has_session = false;
+                st.paused = false;
+                st.seconds_left = 0;
+                st.seconds_total = 0;
+            }
         }
 
-        std::cout << "\nStarting timer for: " << dt.name << "\n";
-        timer_run_blocking(&dt);
+        /* render */
+        ui_draw(&st, st.has_session ? dt.name : "Idle");
 
-        std::cout << "\nPress Enter to select another domain...";
-        std::string dummy;
-        std::getline(std::cin, dummy); /* consume */
-        std::getline(std::cin, dummy);
-        io_clear_screen();
+        /* fps */
+        usleep(100000); /* 100ms */
     }
+
+    terminal_disable_raw_mode(&trm);
+    io_clear_screen();
+    std::cout << "Exiting.\n";
+    return 0;
 }
 
