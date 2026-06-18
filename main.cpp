@@ -48,8 +48,10 @@ int main() {
     st.seconds_total = 0;
 
     ui_load_day_record(&st);
+    ui_draw_frame(&st, "Idle");
 
     TimerNB nb{};
+
     timer_nb_init(&nb);
 
     DomainTimer dt{};
@@ -105,7 +107,13 @@ int main() {
 
 
         /* render */
-        ui_draw(&st, st.has_session ? dt.name : "Idle");
+        if (st.has_session) {
+            ui_update_session(&st, dt.name);
+        }
+        else {
+            ui_update_session(&st, "Idle");
+        }
+
 
         /* fps */
         usleep(100000); /* 100ms */

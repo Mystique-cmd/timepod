@@ -41,7 +41,10 @@ typedef struct {
 void ui_load_day_record(UiState *st);
 void ui_mark_domain_completed_today(UiState *st, int domain_idx);
 
-void ui_draw(const UiState *st, const char *domain_name_if_active);
+void ui_draw_frame(const UiState *st, const char *domain_name_if_active);
+void ui_update_session(const UiState *st, const char *domain_name_if_active);
+void ui_update_calendar(const UiState *st);
+
 
 #ifdef __cplusplus
 }
