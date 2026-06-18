@@ -24,6 +24,7 @@ static void ui_storage_path(char out_path[512]) {
     snprintf(out_path, 512, "./timepod_days.bin");
 }
 
+
 /* fallback tick storage: per-domain persistent flags are stored in timepod_days.bin */
 
 

@@ -103,6 +103,7 @@ int main() {
             }
         }
 
+
         /* render */
         ui_draw(&st, st.has_session ? dt.name : "Idle");
 
