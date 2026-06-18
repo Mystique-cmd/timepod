@@ -48,7 +48,9 @@ int main() {
     st.seconds_total = 0;
 
     ui_load_day_record(&st);
+    ui_refresh_layout(&st);
     ui_draw_frame(&st, "Idle");
+
 
     TimerNB nb{};
 

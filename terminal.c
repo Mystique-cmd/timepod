@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <sys/ioctl.h>
+#include <string.h>
+
+
 
 static struct termios g_orig_termios;
 static bool g_have_orig = false;
@@ -63,4 +67,20 @@ int terminal_read_key_nonblocking(void) {
     if (n <= 0) return -1;
     return (int)c;
 }
+
+int terminal_get_size(int *out_rows, int *out_cols) {
+    if (!out_rows || !out_cols) return -1;
+
+    struct winsize ws;
+    memset(&ws, 0, sizeof(ws));
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) != 0) return -1;
+
+    if (ws.ws_col <= 0 || ws.ws_row <= 0) return -1;
+
+    *out_rows = (int)ws.ws_row;
+    *out_cols = (int)ws.ws_col;
+    return 0;
+}
+
 
