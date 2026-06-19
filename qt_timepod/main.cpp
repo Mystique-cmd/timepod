@@ -34,9 +34,7 @@ public:
 
         // Restore active session if present
         if (ui_session_load_active(&st_)) {
-
-
-            // Reconstruct DomainTimer from persisted seconds_total/name
+            // Reconstruct DomainTimer from persisted values
             static const char *names[TIMEPOD_MAX_DOMAINS] = {
                 "The Portal",
                 "The Factory",
@@ -46,36 +44,29 @@ public:
                 "Specter Spectacle"
             };
 
-            const uint64_t hours[TIMEPOD_MAX_DOMAINS] = {7, 4, 4, 1, 4, 4};
             int idx = st_.active_domain_idx;
             if (idx >= 0 && idx < TIMEPOD_MAX_DOMAINS) {
                 dt_ = {};
-                // Use persisted seconds_total if available; otherwise init from hours
-                if (st_.seconds_total > 0) {
-                    timer_init_hours(&dt_, names[idx], 0);
-                    dt_.seconds_total = st_.seconds_total;
-                    dt_.seconds_left = st_.seconds_left;
+                timer_init_hours(&dt_, names[idx], 0);
 
-                } else {
-                    timer_init_hours(&dt_, names[idx], hours[idx]);
-                    st_.seconds_total = dt_.seconds_total;
-                    st_.seconds_left = dt_.seconds_left;
-                }
+                /* Restore persisted remaining + total */
+                dt_.seconds_total = st_.seconds_total;
+                dt_.seconds_left = st_.seconds_left;
 
                 timer_nb_start(&nb_, &dt_);
+                timer_nb_set_paused(&nb_, &dt_, st_.paused ? 1 : 0);
 
-                if (st_.paused) {
-                    /* Freeze timer state at loaded left */
-                    timer_nb_set_paused(&nb_, &dt_, 1);
-                } else {
-                    /* Ensure nb picks up correct start_ns based on current monotonic time; state is approximated by persisted left */
-                    timer_nb_set_paused(&nb_, &dt_, 0);
-                }
+                /* Ensure timer state reflects persisted remaining */
+                dt_.seconds_left = st_.seconds_left;
+                dt_.seconds_total = st_.seconds_total;
+
+                st_.seconds_left = dt_.seconds_left;
+                st_.seconds_total = dt_.seconds_total;
 
                 dt_initialized_ = true;
-
             }
         }
+
 
 
         tick_timer_ = new QTimer(this);
