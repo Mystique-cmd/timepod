@@ -55,13 +55,11 @@ OBJECTS_DIR   = ./
 SOURCES       = main.cpp \
 		../ui.c \
 		../timer.c \
-		../timer_nb.c \
-		../terminal.c 
+		../timer_nb.c 
 OBJECTS       = main.o \
 		ui.o \
 		timer.o \
-		timer_nb.o \
-		terminal.o
+		timer_nb.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/linux.conf \
@@ -138,8 +136,7 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		../timer_nb.h main.cpp \
 		../ui.c \
 		../timer.c \
-		../timer_nb.c \
-		../terminal.c
+		../timer_nb.c
 QMAKE_TARGET  = timepod_qt
 DESTDIR       = 
 TARGET        = timepod_qt
@@ -318,7 +315,7 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../ui.h ../timer.h ../timer_nb.h $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp ../ui.c ../timer.c ../timer_nb.c ../terminal.c $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp ../ui.c ../timer.c ../timer_nb.c $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -374,8 +371,7 @@ main.o: main.cpp ../timer.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 ui.o: ../ui.c ../ui.h \
-		../timer.h \
-		../terminal.h
+		../timer.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o ui.o ../ui.c
 
 timer.o: ../timer.c ../timer.h
@@ -384,9 +380,6 @@ timer.o: ../timer.c ../timer.h
 timer_nb.o: ../timer_nb.c ../timer_nb.h \
 		../timer.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o timer_nb.o ../timer_nb.c
-
-terminal.o: ../terminal.c ../terminal.h
-	$(CC) -c $(CFLAGS) $(INCPATH) -o terminal.o ../terminal.c
 
 ####### Install
 
