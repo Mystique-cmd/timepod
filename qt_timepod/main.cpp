@@ -1,4 +1,6 @@
 #include <QApplication>
+#include <QCoreApplication>
+
 #include <QWidget>
 #include <QPainter>
 #include <QTimer>
@@ -30,14 +32,67 @@ public:
         timer_nb_init(&nb_);
         ui_load_day_record(&st_);
 
-        dt_initialized_ = false;
+        // Restore active session if present
+        if (ui_session_load_active(&st_)) {
+
+
+            // Reconstruct DomainTimer from persisted seconds_total/name
+            static const char *names[TIMEPOD_MAX_DOMAINS] = {
+                "The Portal",
+                "The Factory",
+                "Benjamin's Game",
+                "The Matrix Manual",
+                "The Rabbit Hole",
+                "Specter Spectacle"
+            };
+
+            const uint64_t hours[TIMEPOD_MAX_DOMAINS] = {7, 4, 4, 1, 4, 4};
+            int idx = st_.active_domain_idx;
+            if (idx >= 0 && idx < TIMEPOD_MAX_DOMAINS) {
+                dt_ = {};
+                // Use persisted seconds_total if available; otherwise init from hours
+                if (st_.seconds_total > 0) {
+                    timer_init_hours(&dt_, names[idx], 0);
+                    dt_.seconds_total = st_.seconds_total;
+                    dt_.seconds_left = st_.seconds_left;
+
+                } else {
+                    timer_init_hours(&dt_, names[idx], hours[idx]);
+                    st_.seconds_total = dt_.seconds_total;
+                    st_.seconds_left = dt_.seconds_left;
+                }
+
+                timer_nb_start(&nb_, &dt_);
+
+                if (st_.paused) {
+                    /* Freeze timer state at loaded left */
+                    timer_nb_set_paused(&nb_, &dt_, 1);
+                } else {
+                    /* Ensure nb picks up correct start_ns based on current monotonic time; state is approximated by persisted left */
+                    timer_nb_set_paused(&nb_, &dt_, 0);
+                }
+
+                dt_initialized_ = true;
+
+            }
+        }
+
 
         tick_timer_ = new QTimer(this);
+
         connect(tick_timer_, &QTimer::timeout, this, &TimePodWidget::onTick);
+        connect(qApp, &QCoreApplication::aboutToQuit, this, &TimePodWidget::onAboutToQuit);
+
         tick_timer_->start(100);
     }
 
+private slots:
+    void onAboutToQuit() {
+        ui_session_save_active(&st_);
+    }
+
 protected:
+
     void keyPressEvent(QKeyEvent *e) override {
         int key = e->key();
         if (key == Qt::Key_Q) {
@@ -277,7 +332,9 @@ private:
             st_.paused = false;
             st_.seconds_left = 0;
             st_.seconds_total = 0;
+            ui_session_clear_active();
         }
+
         update();
     }
 };
