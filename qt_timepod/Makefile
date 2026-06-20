@@ -55,11 +55,13 @@ OBJECTS_DIR   = ./
 SOURCES       = main.cpp \
 		../ui.c \
 		../timer.c \
-		../timer_nb.c 
+		../timer_nb.c \
+		../notify.c 
 OBJECTS       = main.o \
 		ui.o \
 		timer.o \
-		timer_nb.o
+		timer_nb.o \
+		notify.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/linux.conf \
@@ -133,10 +135,12 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/lex.prf \
 		qt_timepod.pro ../ui.h \
 		../timer.h \
-		../timer_nb.h main.cpp \
+		../timer_nb.h \
+		../notify.h main.cpp \
 		../ui.c \
 		../timer.c \
-		../timer_nb.c
+		../timer_nb.c \
+		../notify.c
 QMAKE_TARGET  = timepod_qt
 DESTDIR       = 
 TARGET        = timepod_qt
@@ -314,8 +318,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../ui.h ../timer.h ../timer_nb.h $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp ../ui.c ../timer.c ../timer_nb.c $(DISTDIR)/
+	$(COPY_FILE) --parents ../ui.h ../timer.h ../timer_nb.h ../notify.h $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp ../ui.c ../timer.c ../timer_nb.c ../notify.c $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -367,7 +371,8 @@ compiler_clean: compiler_moc_predefs_clean
 
 main.o: main.cpp ../timer.h \
 		../timer_nb.h \
-		../ui.h
+		../ui.h \
+		../notify.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 ui.o: ../ui.c ../ui.h \
@@ -380,6 +385,9 @@ timer.o: ../timer.c ../timer.h
 timer_nb.o: ../timer_nb.c ../timer_nb.h \
 		../timer.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o timer_nb.o ../timer_nb.c
+
+notify.o: ../notify.c ../notify.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o notify.o ../notify.c
 
 ####### Install
 

@@ -16,7 +16,9 @@ extern "C" {
 #include "timer.h"
 #include "timer_nb.h"
 #include "ui.h"
+#include "notify.h"
 }
+
 
 class TimePodWidget : public QWidget {
 public:
@@ -319,6 +321,7 @@ private:
 
         if (completed) {
             ui_mark_domain_completed_today(&st_, st_.active_domain_idx);
+            timepod_notify_domain_completed(dt_.name);
             st_.has_session = false;
             st_.paused = false;
             st_.seconds_left = 0;
