@@ -35,7 +35,8 @@ public:
         ui_load_day_record(&st_);
 
         // Restore active session if present
-        if (ui_session_load_active(&st_)) {
+        ui_session_load_active(&st_);
+        if (st_.has_session) {
             // Reconstruct DomainTimer from persisted values
             static const char *names[TIMEPOD_MAX_DOMAINS] = {
                 "The Portal",
@@ -326,7 +327,7 @@ private:
             st_.paused = false;
             st_.seconds_left = 0;
             st_.seconds_total = 0;
-            ui_session_clear_active();
+            ui_session_clear_active(&st_);
         }
 
         update();

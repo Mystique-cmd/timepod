@@ -37,7 +37,7 @@ MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
 DISTNAME      = timepod_qt1.0.0
-DISTDIR = /home/mystique/Desktop/Time\ Pod/qt_timepod/.tmp/timepod_qt1.0.0
+DISTDIR = /home/mystique/Desktop/timepod/qt_timepod/.tmp/timepod_qt1.0.0
 LINK          = g++
 LFLAGS        = -Wl,-O1 -Wl,-rpath-link,/usr/lib/x86_64-linux-gnu
 LIBS          = $(SUBLIBS) /usr/lib/x86_64-linux-gnu/libQt6Widgets.so /usr/lib/x86_64-linux-gnu/libQt6Gui.so /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so /usr/lib/x86_64-linux-gnu/libQt6Core.so -lpthread -lGLX -lOpenGL   
@@ -56,12 +56,14 @@ SOURCES       = main.cpp \
 		../ui.c \
 		../timer.c \
 		../timer_nb.c \
-		../notify.c 
+		../notify.c \
+		../session_store.c 
 OBJECTS       = main.o \
 		ui.o \
 		timer.o \
 		timer_nb.o \
-		notify.o
+		notify.o \
+		session_store.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/linux.conf \
@@ -136,11 +138,13 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		qt_timepod.pro ../ui.h \
 		../timer.h \
 		../timer_nb.h \
-		../notify.h main.cpp \
+		../notify.h \
+		../session_store.h main.cpp \
 		../ui.c \
 		../timer.c \
 		../timer_nb.c \
-		../notify.c
+		../notify.c \
+		../session_store.c
 QMAKE_TARGET  = timepod_qt
 DESTDIR       = 
 TARGET        = timepod_qt
@@ -318,8 +322,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../ui.h ../timer.h ../timer_nb.h ../notify.h $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp ../ui.c ../timer.c ../timer_nb.c ../notify.c $(DISTDIR)/
+	$(COPY_FILE) --parents ../ui.h ../timer.h ../timer_nb.h ../notify.h ../session_store.h $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp ../ui.c ../timer.c ../timer_nb.c ../notify.c ../session_store.c $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -376,7 +380,8 @@ main.o: main.cpp ../timer.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 ui.o: ../ui.c ../ui.h \
-		../timer.h
+		../timer.h \
+		../session_store.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o ui.o ../ui.c
 
 timer.o: ../timer.c ../timer.h
@@ -388,6 +393,11 @@ timer_nb.o: ../timer_nb.c ../timer_nb.h \
 
 notify.o: ../notify.c ../notify.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o notify.o ../notify.c
+
+session_store.o: ../session_store.c ../session_store.h \
+		../ui.h \
+		../timer.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o session_store.o ../session_store.c
 
 ####### Install
 
