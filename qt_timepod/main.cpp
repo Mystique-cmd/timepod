@@ -97,6 +97,7 @@ protected:
             if (st_.has_session) {
                 st_.paused = !st_.paused;
                 timer_nb_set_paused(&nb_, &dt_, st_.paused ? 1 : 0);
+                ui_session_save_active(&st_);
             }
             return;
         }
@@ -104,14 +105,12 @@ protected:
             if (st_.has_session) {
                 st_.paused = false;
                 timer_nb_set_paused(&nb_, &dt_, 0);
+                ui_session_save_active(&st_);
             }
             return;
         }
 
-        if (key >= Qt::Key_1 && key <= Qt::Key_6) {
-            int idx = (key - Qt::Key_1); // 0..5
-            startDomain(idx);
-        }
+        // TODO: free-text description mode will be implemented next.
     }
 
     void paintEvent(QPaintEvent *) override {
