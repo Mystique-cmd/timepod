@@ -5,9 +5,11 @@
 #include <QPainter>
 #include <QTimer>
 #include <QKeyEvent>
+#include <QResizeEvent>
 #include <QFont>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QLineEdit>
 #include <QString>
 #include <algorithm>
 #include <cstring>
@@ -37,20 +39,10 @@ public:
         // Restore active session if present
         ui_session_load_active(&st_);
         if (st_.has_session) {
-            // Reconstruct DomainTimer from persisted values
-            static const char *names[TIMEPOD_MAX_DOMAINS] = {
-                "The Portal",
-                "The Factory",
-                "Benjamin's Game",
-                "The Matrix Manual",
-                "The Rabbit Hole",
-                "Specter Spectacle"
-            };
-
             int idx = st_.active_domain_idx;
             if (idx >= 0 && idx < TIMEPOD_MAX_DOMAINS) {
                 dt_ = {};
-                timer_init_hours(&dt_, names[idx], 0);
+                timer_init_hours(&dt_, "Session", 0);
 
                 /* Restore persisted remaining + total */
                 dt_.seconds_total = st_.seconds_total;
@@ -70,7 +62,27 @@ public:
             }
         }
 
-
+        // Task description input field
+        task_input_ = new QLineEdit(this);
+        task_input_->setPlaceholderText("Describe your task and press Enter to start...");
+        task_input_->setStyleSheet(
+            "QLineEdit {"
+            "  background-color: #1a1a1a;"
+            "  color: #ffffff;"
+            "  border: 1px solid #555;"
+            "  border-radius: 4px;"
+            "  padding: 4px 8px;"
+            "  font-size: 12pt;"
+            "}"
+            "QLineEdit:focus {"
+            "  border-color: #00dcff;"
+            "}"
+        );
+        if (st_.has_session) {
+            task_input_->setEnabled(false);
+            task_input_->setText(QString::fromUtf8(st_.description));
+        }
+        connect(task_input_, &QLineEdit::returnPressed, this, &TimePodWidget::onTaskSubmit);
 
         tick_timer_ = new QTimer(this);
 
@@ -83,6 +95,22 @@ public:
 private slots:
     void onAboutToQuit() {
         ui_session_save_active(&st_);
+    }
+
+    void onTaskSubmit() {
+        QString desc = task_input_->text().trimmed();
+        if (desc.isEmpty()) return;
+
+        // Store description in UiState
+        QByteArray utf8 = desc.toUtf8();
+        std::strncpy(st_.description, utf8.constData(), sizeof(st_.description) - 1);
+        st_.description[sizeof(st_.description) - 1] = '\0';
+
+        // Start a timer session (use default domain 0)
+        startDomain(0);
+
+        task_input_->clear();
+        task_input_->setEnabled(false);
     }
 
 protected:
@@ -120,13 +148,13 @@ protected:
         p.fillRect(rect(), Qt::black);
 
         const int w = width();
-        const int h = height();
+        const int h = height() - 50; // reserve space for input field at bottom
 
         QRect left(20, 20, w/2 - 30, h - 40);
         QRect right(w/2 + 10, 20, w/2 - 30, h - 40);
 
         drawPanel(p, left, "[ACTIVE]");
-        drawPanel(p, right, "[CALENDAR]");
+        drawPanel(p, right, "[TODAY]");
 
         // Fonts
         QFont titleF = font();
@@ -136,6 +164,14 @@ protected:
 
         drawLeftContent(p, left);
         drawRightContent(p, right);
+    }
+
+    void resizeEvent(QResizeEvent *e) override {
+        QWidget::resizeEvent(e);
+        // Position input field at bottom center
+        int iw = qMin(width() - 40, 600);
+        int ih = 34;
+        task_input_->setGeometry((width() - iw) / 2, height() - ih - 12, iw, ih);
     }
 
 private:
@@ -157,27 +193,30 @@ private:
         int y = r.top() + 40;
         const int mw = r.width() - 40;
 
-        static const char *names[TIMEPOD_MAX_DOMAINS] = {
-            "The Portal",
-            "The Factory",
-            "Benjamin's Game",
-            "The Matrix Manual",
-            "The Rabbit Hole",
-            "Specter Spectacle"
-        };
-
-        QString domain = st_.has_session ? names[st_.active_domain_idx] : "Idle";
         QString state = st_.has_session ? (st_.paused ? "PAUSED" : "RUNNING") : "NO SESSION";
+        QString desc = QString::fromUtf8(st_.description);
+        if (desc.isEmpty() && st_.has_session) desc = "Untitled task";
 
         QFont f = font();
         f.setPointSize(12);
         f.setBold(true);
         p.setFont(f);
         p.setPen(Qt::white);
-        p.drawText(x, y, "Domain: "+domain);
-        y += 26;
         p.drawText(x, y, "State : "+state);
-        y += 26;
+        y += 24;
+
+        if (st_.has_session) {
+            p.setPen(QColor(0, 220, 255));
+            f.setPointSize(11);
+            p.setFont(f);
+            p.drawText(x, y, "Task: " + desc);
+            y += 24;
+        }
+
+        f.setPointSize(12);
+        f.setBold(true);
+        p.setFont(f);
+        p.setPen(Qt::white);
 
         if (st_.has_session) {
             char buf[9]; timer_format_hms(dt_.seconds_left, buf);
@@ -224,7 +263,6 @@ private:
     void drawRightContent(QPainter &p, const QRect &r) {
         int x = r.left() + 20;
         int y = r.top() + 40;
-        const int mw = r.width() - 40;
 
         QFont f = font();
         f.setPointSize(12);
@@ -238,61 +276,25 @@ private:
                      .arg(st_.day.day, 2, 10, QChar('0')));
         y += 30;
 
-        static const char *names[TIMEPOD_MAX_DOMAINS] = {
-            "The Portal",
-            "The Factory",
-            "Benjamin's Game",
-            "The Matrix Manual",
-            "The Rabbit Hole",
-            "Specter Spectacle"
-        };
-
-        p.setPen(QColor(0, 220, 255));
-
-        int gridLeft = x;
-        int gridTop = y;
-        int cellW = (mw - 30) / 2;
-        int cellH = 70;
-
+        // Single completion status for the day
+        bool any_completed = false;
         for (int i = 0; i < TIMEPOD_MAX_DOMAINS; i++) {
-            int row = i / 2;
-            int col = i % 2;
-            QRect cell(gridLeft + col*(cellW+15), gridTop + row*(cellH+10), cellW, cellH);
-            p.setPen(QPen(QColor(0, 220, 255)));
-            p.setBrush(Qt::NoBrush);
-            p.drawRect(cell);
-
-            bool ok = st_.day.completed[i];
-            p.setPen(Qt::white);
-            p.setFont(font());
-            QFont small = font(); small.setPointSize(10); small.setBold(true);
-            p.setFont(small);
-            p.drawText(cell.adjusted(8, 10, -8, -8), Qt::AlignLeft | Qt::AlignTop,
-                       QString("%1 %2").arg(ok ? "✓" : "·").arg(names[i]));
+            if (st_.day.completed[i]) { any_completed = true; break; }
         }
 
-        // Legend
-        y = r.bottom() - 70;
-        p.setFont(font());
-        QFont lf = font(); lf.setPointSize(10); lf.setBold(false);
-        p.setFont(lf);
-        p.setPen(QColor(180, 180, 180));
-        p.drawText(x, y, "Legend: ✓ completed today   · not completed");
+        QFont sf = font();
+        sf.setPointSize(14);
+        sf.setBold(true);
+        p.setFont(sf);
+        p.setPen(any_completed ? QColor(0, 220, 100) : QColor(180, 180, 180));
+        p.drawText(x, y, any_completed ? "✓ Completed" : "· Not completed");
     }
 
     void startDomain(int idx) {
-        static const char *names[TIMEPOD_MAX_DOMAINS] = {
-            "The Portal",
-            "The Factory",
-            "Benjamin's Game",
-            "The Matrix Manual",
-            "The Rabbit Hole",
-            "Specter Spectacle"
-        };
         const uint64_t hours[TIMEPOD_MAX_DOMAINS] = {7, 4, 4, 1, 4, 4};
 
         dt_ = {};
-        timer_init_hours(&dt_, names[idx], hours[idx]);
+        timer_init_hours(&dt_, "Session", hours[idx]);
         st_.active_domain_idx = idx;
         st_.has_session = true;
         st_.paused = false;
@@ -308,6 +310,7 @@ private:
     DomainTimer dt_{};
     bool dt_initialized_;
     QTimer *tick_timer_ = nullptr;
+    QLineEdit *task_input_ = nullptr;
 
     void onTick() {
         if (!st_.has_session) {
@@ -326,7 +329,10 @@ private:
             st_.paused = false;
             st_.seconds_left = 0;
             st_.seconds_total = 0;
+            st_.description[0] = '\0';
             ui_session_clear_active(&st_);
+            task_input_->setEnabled(true);
+            task_input_->setFocus();
         }
 
         update();
