@@ -5,10 +5,20 @@
 extern "C" {
 #include "timer.h"
 #include "timer_nb.h"
-#include "io.h"
 #include "ui.h"
+}
+
+/*
+ * TUI is optional.
+ * This repository snapshot may not contain io.h/terminal.h (TUI runtime),
+ * so keep the TUI interactive loop behind a compile-time flag.
+ */
+#if defined(TIMEPOD_ENABLE_TUI)
+extern "C" {
+#include "io.h"
 #include "terminal.h"
 }
+#endif
 
 static void choose_domain_by_key(int key, DomainTimer *out_dt, int *out_idx) {
     /* legacy keyboard digits 1..6 */
@@ -35,6 +45,7 @@ static void choose_domain_by_key(int key, DomainTimer *out_dt, int *out_idx) {
 }
 
 int main() {
+#if defined(TIMEPOD_ENABLE_TUI)
     io_clear_screen();
 
     TerminalRawMode trm{};
@@ -51,14 +62,10 @@ int main() {
     ui_refresh_layout(&st);
     ui_draw_frame(&st, "Idle");
 
-
     TimerNB nb{};
-
     timer_nb_init(&nb);
 
     DomainTimer dt{};
-
-
 
     bool running = true;
     while (running) {
@@ -107,15 +114,12 @@ int main() {
             }
         }
 
-
         /* render */
         if (st.has_session) {
             ui_update_session(&st, dt.name);
-        }
-        else {
+        } else {
             ui_update_session(&st, "Idle");
         }
-
 
         /* fps */
         usleep(100000); /* 100ms */
@@ -125,5 +129,18 @@ int main() {
     io_clear_screen();
     std::cout << "Exiting.\n";
     return 0;
+#else
+    /* Minimal non-TUI build: just link successfully. */
+    UiState st{};
+    st.active_domain_idx = 0;
+    st.has_session = false;
+    st.paused = false;
+    st.seconds_left = 0;
+    st.seconds_total = 0;
+
+    ui_load_day_record(&st);
+    std::cout << "timepod (non-TUI build): define TIMEPOD_ENABLE_TUI to enable interactive mode.\n";
+    return 0;
+#endif
 }
 

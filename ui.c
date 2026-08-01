@@ -125,3 +125,23 @@ void ui_update_calendar(const UiState *st) {
     /* TUI removed */
 }
 
+/* Active-session persistence */
+
+#include "session_store.h"
+
+void ui_session_load_active(UiState *st) {
+    if (!st) return;
+    session_store_load_active(st);
+}
+
+void ui_session_save_active(const UiState *st) {
+    if (!st) return;
+    session_store_save_active(st);
+}
+
+void ui_session_clear_active(UiState *st) {
+    if (!st) return;
+    session_store_clear_active(st);
+}
+
+

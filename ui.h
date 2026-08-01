@@ -30,12 +30,24 @@ typedef struct {
     bool has_session;
     bool paused;
 
-    /* remaining seconds for active session */
+    /* classification */
+    uint32_t session_mode; /* 0 flexible, 1 rigid */
+
+    /* free-text description used to classify + schedule */
+    char description[256];
+
+    /* timer state */
     uint64_t seconds_left;
     uint64_t seconds_total;
 
+    /* wall-clock timestamps for resume continuity (seconds since epoch) */
+    int64_t session_start_time_t;
+    int64_t pause_start_time_t;
+    uint64_t paused_seconds;
+
     /* last known day record */
     DayRecord day;
+
 
     /* cached layout metrics (terminal-size aware rendering) */
     int term_rows;
@@ -59,11 +71,15 @@ void ui_draw_frame(const UiState *st, const char *domain_name_if_active);
 void ui_update_session(const UiState *st, const char *domain_name_if_active);
 void ui_update_calendar(const UiState *st);
 
-
+/* Active-session persistence (so timers can resume after app close). */
+void ui_session_load_active(UiState *st);
+void ui_session_save_active(const UiState *st);
+void ui_session_clear_active(UiState *st);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
+
 

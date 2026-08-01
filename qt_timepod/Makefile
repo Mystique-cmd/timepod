@@ -14,10 +14,10 @@ EQ            = =
 
 CC            = gcc
 CXX           = g++
-DEFINES       = -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
+DEFINES       = -DQT_NO_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_NETWORK_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -O2 -Wall -Wextra -D_REENTRANT $(DEFINES)
 CXXFLAGS      = -pipe -O2 -std=gnu++1z -Wall -Wextra -D_REENTRANT $(DEFINES)
-INCPATH       = -I. -I.. -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I. -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++
+INCPATH       = -I. -I.. -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtNetwork -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I. -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++
 QMAKE         = /usr/bin/qmake6
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -40,7 +40,7 @@ DISTNAME      = timepod_qt1.0.0
 DISTDIR = /home/mystique/Desktop/timepod/qt_timepod/.tmp/timepod_qt1.0.0
 LINK          = g++
 LFLAGS        = -Wl,-O1 -Wl,-rpath-link,/usr/lib/x86_64-linux-gnu
-LIBS          = $(SUBLIBS) /usr/lib/x86_64-linux-gnu/libQt6Widgets.so /usr/lib/x86_64-linux-gnu/libQt6Gui.so /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so /usr/lib/x86_64-linux-gnu/libQt6Core.so -lpthread -lGLX -lOpenGL   
+LIBS          = $(SUBLIBS) /usr/lib/x86_64-linux-gnu/libQt6Widgets.so /usr/lib/x86_64-linux-gnu/libQt6Gui.so /usr/lib/x86_64-linux-gnu/libGLX.so /usr/lib/x86_64-linux-gnu/libOpenGL.so /usr/lib/x86_64-linux-gnu/libQt6Network.so /usr/lib/x86_64-linux-gnu/libQt6Core.so -lpthread -lGLX -lOpenGL   
 AR            = ar cqs
 RANLIB        = 
 SED           = sed
@@ -53,17 +53,24 @@ OBJECTS_DIR   = ./
 ####### Files
 
 SOURCES       = main.cpp \
+		ai_client.cpp \
 		../ui.c \
 		../timer.c \
 		../timer_nb.c \
 		../notify.c \
-		../session_store.c 
+		../session_store.c \
+		../task_intake.c \
+		../task_store.c moc_ai_client.cpp
 OBJECTS       = main.o \
+		ai_client.o \
 		ui.o \
 		timer.o \
 		timer_nb.o \
 		notify.o \
-		session_store.o
+		session_store.o \
+		task_intake.o \
+		task_store.o \
+		moc_ai_client.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/unix.conf \
 		/usr/lib/x86_64-linux-gnu/qt6/mkspecs/common/linux.conf \
@@ -139,12 +146,18 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf \
 		../timer.h \
 		../timer_nb.h \
 		../notify.h \
-		../session_store.h main.cpp \
+		../session_store.h \
+		../task_intake.h \
+		../task_store.h \
+		ai_client.h main.cpp \
+		ai_client.cpp \
 		../ui.c \
 		../timer.c \
 		../timer_nb.c \
 		../notify.c \
-		../session_store.c
+		../session_store.c \
+		../task_intake.c \
+		../task_store.c
 QMAKE_TARGET  = timepod_qt
 DESTDIR       = 
 TARGET        = timepod_qt
@@ -230,6 +243,7 @@ Makefile: qt_timepod.pro /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++/qmake.c
 		qt_timepod.pro \
 		/usr/lib/x86_64-linux-gnu/libQt6Widgets.prl \
 		/usr/lib/x86_64-linux-gnu/libQt6Gui.prl \
+		/usr/lib/x86_64-linux-gnu/libQt6Network.prl \
 		/usr/lib/x86_64-linux-gnu/libQt6Core.prl
 	$(QMAKE) -o Makefile qt_timepod.pro
 /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/spec_pre.prf:
@@ -306,6 +320,7 @@ Makefile: qt_timepod.pro /usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++/qmake.c
 qt_timepod.pro:
 /usr/lib/x86_64-linux-gnu/libQt6Widgets.prl:
 /usr/lib/x86_64-linux-gnu/libQt6Gui.prl:
+/usr/lib/x86_64-linux-gnu/libQt6Network.prl:
 /usr/lib/x86_64-linux-gnu/libQt6Core.prl:
 qmake: FORCE
 	@$(QMAKE) -o Makefile qt_timepod.pro
@@ -322,8 +337,8 @@ distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents ../ui.h ../timer.h ../timer_nb.h ../notify.h ../session_store.h $(DISTDIR)/
-	$(COPY_FILE) --parents main.cpp ../ui.c ../timer.c ../timer_nb.c ../notify.c ../session_store.c $(DISTDIR)/
+	$(COPY_FILE) --parents ../ui.h ../timer.h ../timer_nb.h ../notify.h ../session_store.h ../task_intake.h ../task_store.h ai_client.h $(DISTDIR)/
+	$(COPY_FILE) --parents main.cpp ai_client.cpp ../ui.c ../timer.c ../timer_nb.c ../notify.c ../session_store.c ../task_intake.c ../task_store.c $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -355,12 +370,32 @@ compiler_moc_predefs_clean:
 moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp
 	g++ -pipe -O2 -std=gnu++1z -Wall -Wextra -dM -E -o moc_predefs.h /usr/lib/x86_64-linux-gnu/qt6/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all:
+compiler_moc_header_make_all: moc_ai_client.cpp
 compiler_moc_header_clean:
+	-$(DEL_FILE) moc_ai_client.cpp
+moc_ai_client.cpp: ai_client.h \
+		../task_intake.h \
+		moc_predefs.h \
+		/usr/lib/qt6/libexec/moc
+	/usr/lib/qt6/libexec/moc $(DEFINES) --include /home/mystique/Desktop/timepod/qt_timepod/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -I/home/mystique/Desktop/timepod/qt_timepod -I/home/mystique/Desktop/timepod -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtNetwork -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I/usr/include/c++/15 -I/usr/include/x86_64-linux-gnu/c++/15 -I/usr/include/c++/15/backward -I/usr/lib/gcc/x86_64-linux-gnu/15/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include ai_client.h -o moc_ai_client.cpp
+
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
-compiler_moc_source_make_all:
+compiler_moc_source_make_all: main.moc
 compiler_moc_source_clean:
+	-$(DEL_FILE) main.moc
+main.moc: main.cpp \
+		../timer.h \
+		../timer_nb.h \
+		../ui.h \
+		../notify.h \
+		../task_intake.h \
+		../task_store.h \
+		ai_client.h \
+		moc_predefs.h \
+		/usr/lib/qt6/libexec/moc
+	/usr/lib/qt6/libexec/moc $(DEFINES) --include /home/mystique/Desktop/timepod/qt_timepod/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt6/mkspecs/linux-g++ -I/home/mystique/Desktop/timepod/qt_timepod -I/home/mystique/Desktop/timepod -I/usr/include/x86_64-linux-gnu/qt6 -I/usr/include/x86_64-linux-gnu/qt6/QtWidgets -I/usr/include/x86_64-linux-gnu/qt6/QtGui -I/usr/include/x86_64-linux-gnu/qt6/QtNetwork -I/usr/include/x86_64-linux-gnu/qt6/QtCore -I/usr/include/c++/15 -I/usr/include/x86_64-linux-gnu/c++/15 -I/usr/include/c++/15/backward -I/usr/lib/gcc/x86_64-linux-gnu/15/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include main.cpp -o main.moc
+
 compiler_uic_make_all:
 compiler_uic_clean:
 compiler_yacc_decl_make_all:
@@ -369,15 +404,23 @@ compiler_yacc_impl_make_all:
 compiler_yacc_impl_clean:
 compiler_lex_make_all:
 compiler_lex_clean:
-compiler_clean: compiler_moc_predefs_clean 
+compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_moc_source_clean 
 
 ####### Compile
 
 main.o: main.cpp ../timer.h \
 		../timer_nb.h \
 		../ui.h \
-		../notify.h
+		../notify.h \
+		../task_intake.h \
+		../task_store.h \
+		ai_client.h \
+		main.moc
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
+
+ai_client.o: ai_client.cpp ai_client.h \
+		../task_intake.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o ai_client.o ai_client.cpp
 
 ui.o: ../ui.c ../ui.h \
 		../timer.h \
@@ -398,6 +441,16 @@ session_store.o: ../session_store.c ../session_store.h \
 		../ui.h \
 		../timer.h
 	$(CC) -c $(CFLAGS) $(INCPATH) -o session_store.o ../session_store.c
+
+task_intake.o: ../task_intake.c ../task_intake.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o task_intake.o ../task_intake.c
+
+task_store.o: ../task_store.c ../task_store.h \
+		../task_intake.h
+	$(CC) -c $(CFLAGS) $(INCPATH) -o task_store.o ../task_store.c
+
+moc_ai_client.o: moc_ai_client.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_ai_client.o moc_ai_client.cpp
 
 ####### Install
 
